@@ -24,6 +24,10 @@
   let viewYear = new Date().getFullYear();
   let viewMonth = new Date().getMonth(); // 0-indexed
 
+  // Track active real-time/simulated month and date to detect auto-progression
+  let lastActiveMonthKey = null;
+  let lastActiveDateKey = null;
+
   // Active selected date in modal
   let selectedDateStr = null;
 
@@ -328,8 +332,6 @@
     const connected = window.CloudDB ? window.CloudDB.init(savedCfg) : false;
 
     if (connected) {
-      showToast('☁️ 正在連線 Firebase...', 'info');
-
       // 從雲端載入最新資料（覆蓋本地）
       try {
         const [cloudBookings, cloudHolidays, cloudPasswords] = await Promise.all([
@@ -338,16 +340,17 @@
           window.CloudDB.read(window.CloudDB.PATHS.PASSWORDS)
         ]);
 
-        if (cloudBookings) {
+        // 若需要清理示範資料且雲端尚未重置，則將雲端資料清空
+        if (localStorage.getItem('class_res_cloud_cleaned_v3') !== 'true') {
+          await window.CloudDB.write(window.CloudDB.PATHS.BOOKINGS, {});
+          localStorage.setItem('class_res_cloud_cleaned_v3', 'true');
+          _cachedBookings = {};
+          localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify({}));
+        } else if (cloudBookings) {
           _cachedBookings = cloudBookings;
           localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(cloudBookings));
         } else {
-          // 若雲端為空，把本地資料上傳到雲端
-          const localBookings = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || '{}');
-          if (Object.keys(localBookings).length > 0) {
-            await window.CloudDB.write(window.CloudDB.PATHS.BOOKINGS, localBookings);
-            _cachedBookings = localBookings;
-          }
+          _cachedBookings = _cachedBookings || {};
         }
 
         if (cloudHolidays) {
@@ -360,62 +363,51 @@
           localStorage.setItem(STORAGE_KEYS.PASSWORDS, JSON.stringify(cloudPasswords));
         }
 
-        // 啟動即時監聽
+        // 啟動即時雙向監聽（持續自動同步，無需詢問）
         setupFirebaseListeners();
 
         renderCalendar();
         renderTodayView();
         renderRosterView();
-        showToast('✅ Firebase 雲端連線成功！全班資料即時共用中', 'success');
       } catch (e) {
         console.error('[CloudDB] 初始載入失敗:', e);
-        showToast('⚠️ 雲端連線中斷，使用本地資料', 'warning');
       }
     }
   }
 
   /**
-   * 初始化預設示範資料 (讓日曆一打開就有生動的範例)
+   * 初始化預約資料與快取清理
+   * 徹底移除自動預填假示範資料的邏輯，確保新舊快取完全重置為乾淨空白的名冊
    */
   function initDemoDataIfNeeded() {
-    if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) return;
-
-    const now = getCurrentDateTime();
-    const demoBookings = {};
-
-    // 尋找本月接下來的週二與週四，預填幾筆真實情境的預約與簽到
-    for (let i = -7; i <= 21; i++) {
-      const testD = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-      if (isBookableDay(testD)) {
-        const key = formatDateKey(testD);
-        if (i < 0) {
-          // 過去的練習日
-          demoBookings[key] = [
-            { seat: 3, checkedIn: true, checkInTime: '16:32' },
-            { seat: 8, checkedIn: true, checkInTime: '16:45' },
-            { seat: 14, checkedIn: false },
-            { seat: 22, checkedIn: true, checkInTime: '16:29' }
-          ];
-        } else if (i === 0) {
-          // 若今天剛好是二或四
-          demoBookings[key] = [
-            { seat: 5, checkedIn: true, checkInTime: '16:33' },
-            { seat: 12, checkedIn: false },
-            { seat: 19, checkedIn: false }
-          ];
-        } else {
-          // 未來的週二四
-          demoBookings[key] = [
-            { seat: 7, checkedIn: false },
-            { seat: 15, checkedIn: false },
-            { seat: 28, checkedIn: false }
-          ];
-        }
+    // 執行一次性清理既有瀏覽器快取中的幽靈假預約
+    if (localStorage.getItem('class_res_demo_cleaned_v3') !== 'true') {
+      localStorage.removeItem(STORAGE_KEYS.BOOKINGS);
+      localStorage.removeItem(STORAGE_KEYS.INITIALIZED);
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify({}));
+      localStorage.setItem('class_res_demo_cleaned_v3', 'true');
+      _cachedBookings = {};
+      if (window.CloudDB && window.CloudDB.isOnline()) {
+        window.CloudDB.write(window.CloudDB.PATHS.BOOKINGS, {}).catch(e => console.error(e));
       }
+      console.log('[System] 已成功清除舊示範預約資料，恢復完全空白！');
     }
+  }
 
-    saveStoredBookings(demoBookings);
-    localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+  /**
+   * 清空並重置全班所有預約與簽到紀錄
+   */
+  function resetAllBookings() {
+    _cachedBookings = {};
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify({}));
+    localStorage.removeItem(STORAGE_KEYS.INITIALIZED);
+    if (window.CloudDB && window.CloudDB.isOnline()) {
+      window.CloudDB.write(window.CloudDB.PATHS.BOOKINGS, {})
+        .catch(e => console.error('[CloudDB] 重置預約失敗:', e));
+    }
+    renderCalendar();
+    renderTodayView();
+    renderRosterView();
   }
 
   // ==========================================
@@ -570,16 +562,29 @@
     // 取得上個月的天數以填補開頭
     const prevMonthLastDay = new Date(viewYear, viewMonth, 0).getDate();
 
-    // 1. 上個月的灰色格子 (Prefix)
+    // 1. 上個月的灰色格子 (Prefix - 支援點擊快速切換上月)
     for (let i = startingDayIndex - 1; i >= 0; i--) {
       const prevDate = prevMonthLastDay - i;
+      const prevDateObj = new Date(viewYear, viewMonth - 1, prevDate);
       const cell = document.createElement('div');
-      cell.className = 'day-cell other-month';
+      cell.className = 'day-cell other-month clickable-other-month';
+      cell.title = `點擊切換至 ${prevDateObj.getMonth() + 1} 月`;
       cell.innerHTML = `
         <div class="cell-top">
           <span class="date-number">${prevDate}</span>
         </div>
+        <div class="cell-content">
+          <span style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${prevDateObj.getMonth() + 1} 月</span>
+        </div>
       `;
+      cell.addEventListener('click', () => {
+        viewMonth--;
+        if (viewMonth < 0) {
+          viewMonth = 11;
+          viewYear--;
+        }
+        renderCalendar();
+      });
       daysGrid.appendChild(cell);
     }
 
@@ -590,6 +595,8 @@
       const dayOfWeek = currentDateObj.getDay();
       const isTueThu = (dayOfWeek === 2 || dayOfWeek === 4);
       const isToday = (dateStr === todayStr);
+      const isBlocked = isHolidayDate(dateStr);
+      const holidayReason = getHolidayReason(dateStr);
 
       const cell = document.createElement('div');
       cell.className = 'day-cell';
@@ -605,8 +612,27 @@
       const hasMyBooking = currentUser && dayBookings.some(b => b.seat === currentUser);
       const checkedInCount = dayBookings.filter(b => b.checkedIn).length;
 
-      if (isTueThu) {
-        // 週二或週四：開放預約
+      if (isBlocked) {
+        // 設定為不可預約（放假停練）
+        cell.classList.add('blocked-date-cell');
+        cell.innerHTML = `
+          ${isToday ? '<span class="today-banner-pill">今日</span>' : ''}
+          <div class="cell-top">
+            <span class="date-number">${d}</span>
+            <span class="cell-badge badge-holiday" style="background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);">🚫 停練</span>
+          </div>
+          <div class="cell-content">
+            <span class="status-chip chip-holiday" style="background:rgba(239,68,68,0.15);color:#f87171;font-size:0.75rem;">🚫 停練 (${holidayReason || '放假'})</span>
+            <div style="font-size:0.74rem; color:#fca5a5; margin-top:4px; text-align:center;">${holidayReason || '本日停止練習'}</div>
+          </div>
+          <div class="cell-footer-hint">不開放預約</div>
+        `;
+        cell.addEventListener('click', () => {
+          showToast(`🏖️ ${dateStr} 已設定為停練日（理由：${holidayReason || '放假'}），不開放預約！`, 'warning');
+        });
+
+      } else if (isTueThu) {
+        // 週二或週四：正常開放預約
         cell.classList.add('bookable');
         const practiceStatus = getDatePracticeStatus(dateStr);
 
@@ -661,18 +687,53 @@
       daysGrid.appendChild(cell);
     }
 
-    // 3. 下個月的補充格子，湊齊 7 的倍數 (Suffix)
+    // 3. 下個月的補充格子，湊齊 7 的倍數 (Suffix - 支援點擊快速切換至次月，如 10 月)
     const currentCells = startingDayIndex + totalDays;
     const remainingCells = (7 - (currentCells % 7)) % 7;
     for (let j = 1; j <= remainingCells; j++) {
+      const nextMonthObj = new Date(viewYear, viewMonth + 1, j);
+      const nextDateKey = formatDateKey(nextMonthObj);
+      const isNextTueThu = (nextMonthObj.getDay() === 2 || nextMonthObj.getDay() === 4);
+      const nextMonthNum = nextMonthObj.getMonth() + 1;
+
       const cell = document.createElement('div');
-      cell.className = 'day-cell other-month';
+      cell.className = 'day-cell other-month clickable-other-month';
+      cell.title = `點擊切換至 ${nextMonthNum} 月${isNextTueThu ? '並查看預約' : ''}`;
       cell.innerHTML = `
         <div class="cell-top">
           <span class="date-number">${j}</span>
+          ${isNextTueThu ? `<span class="cell-badge" style="background:rgba(14,165,233,0.15);color:#38bdf8;font-size:0.68rem;">週${nextMonthObj.getDay() === 2 ? '二' : '四'}</span>` : ''}
+        </div>
+        <div class="cell-content">
+          <span style="font-size:0.7rem; color:var(--text-dim); text-align:center;">進入 ${nextMonthNum} 月</span>
         </div>
       `;
+
+      cell.addEventListener('click', () => {
+        viewMonth++;
+        if (viewMonth > 11) {
+          viewMonth = 0;
+          viewYear++;
+        }
+        renderCalendar();
+        if (isNextTueThu) {
+          openBookingModal(nextDateKey);
+        }
+      });
       daysGrid.appendChild(cell);
+    }
+
+    // 更新「回到今天」按鈕提示狀態
+    const btnJumpToday = document.getElementById('btnJumpToday');
+    if (btnJumpToday) {
+      const isViewingCurrentMonth = (viewYear === now.getFullYear() && viewMonth === now.getMonth());
+      if (!isViewingCurrentMonth) {
+        btnJumpToday.classList.add('highlight-return-today');
+        btnJumpToday.title = `目前正在檢視 ${viewMonth + 1} 月，點此回當前月份`;
+      } else {
+        btnJumpToday.classList.remove('highlight-return-today');
+        btnJumpToday.title = '點擊回到今天所屬月份';
+      }
     }
   }
 
@@ -1283,6 +1344,29 @@
     // 檢查今天是否為週二或週四
     const isTueThu = (now.getDay() === 2 || now.getDay() === 4);
     const todayKey = `${y}-${m}-${d}`;
+    const currentMonthKey = `${y}-${now.getMonth()}`;
+
+    // 自動跟隨時間前進：進入新月份（如進入 10 月）自動切換月曆
+    if (lastActiveMonthKey === null) {
+      lastActiveMonthKey = currentMonthKey;
+      lastActiveDateKey = todayKey;
+    } else if (lastActiveMonthKey !== currentMonthKey) {
+      console.log(`[Clock] 跨月自動同步：${lastActiveMonthKey} -> ${currentMonthKey}`);
+      lastActiveMonthKey = currentMonthKey;
+      lastActiveDateKey = todayKey;
+      viewYear = now.getFullYear();
+      viewMonth = now.getMonth();
+      renderCalendar();
+      renderTodayView();
+      renderRosterView();
+      showToast(`🗓️ 系統時間已進入 ${viewYear} 年 ${viewMonth + 1} 月，日曆已自動為您切換至當月！`, 'info');
+    } else if (lastActiveDateKey !== todayKey) {
+      // 跨日（午夜 00:00 過後）
+      lastActiveDateKey = todayKey;
+      renderCalendar();
+      renderTodayView();
+      renderRosterView();
+    }
 
     practiceStatusPill.className = 'practice-status-pill';
 
@@ -1514,14 +1598,9 @@
     // CSV 匯出與重設資料
     document.getElementById('btnExportCSV')?.addEventListener('click', exportCSV);
     document.getElementById('btnResetDemoData')?.addEventListener('click', () => {
-      if (confirm('確定要重新重設示範資料嗎？這將會清空目前所有預約與打卡紀錄。')) {
-        localStorage.removeItem(STORAGE_KEYS.BOOKINGS);
-        localStorage.removeItem(STORAGE_KEYS.INITIALIZED);
-        initDemoDataIfNeeded();
-        renderCalendar();
-        renderTodayView();
-        renderRosterView();
-        showToast('示範資料已重設完成！', 'info');
+      if (confirm('確定要清空全班的所有預約與打卡紀錄嗎？此動作將重置為完全空白的名冊。')) {
+        resetAllBookings();
+        showToast('✅ 全班預約與簽到紀錄已全數清空重置！', 'success');
       }
     });
 
@@ -1538,7 +1617,7 @@
       }
     });
 
-    // 模擬時段按鈕
+    // 模擬時段按鈕（含 10 月練習日時段支援）
     document.querySelectorAll('.sim-btn').forEach(btn => {
       btn.addEventListener('click', function () {
         const mode = this.getAttribute('data-sim');
@@ -1546,28 +1625,46 @@
 
         if (mode === 'real') {
           simulatedTimeOffset = null;
-          showToast('已恢復使用電腦真實時間', 'info');
+          const realNow = new Date();
+          viewYear = realNow.getFullYear();
+          viewMonth = realNow.getMonth();
+          lastActiveMonthKey = `${viewYear}-${viewMonth}`;
+          lastActiveDateKey = formatDateKey(realNow);
+          showToast('已恢復使用電腦真實時間（日曆已自動同步至當前月份）', 'info');
         } else {
-          // 找尋本週最近的週二或週四
-          let targetDay = 2; // 預設週二
-          if (mode === 'thu-practice') targetDay = 4;
+          let simDate;
+          if (mode === 'oct-practice') {
+            // 2026 年 10 月 1 日 (週四 16:30 練習時段)
+            simDate = new Date(now.getFullYear(), 9, 1, 16, 30, 0, 0);
+          } else if (mode === 'oct-tue') {
+            // 2026 年 10 月 6 日 (週二 10:00 預約開放時段)
+            simDate = new Date(now.getFullYear(), 9, 6, 10, 0, 0, 0);
+          } else {
+            // 找尋本週最近的週二或週四
+            let targetDay = 2; // 預設週二
+            if (mode === 'thu-practice') targetDay = 4;
 
-          const currentDay = now.getDay();
-          const diffDays = (targetDay - currentDay + 7) % 7;
-          const simDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffDays);
+            const currentDay = now.getDay();
+            const diffDays = (targetDay - currentDay + 7) % 7;
+            simDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffDays);
 
-          if (mode === 'tue-morning') {
-            simDate.setHours(10, 0, 0, 0);
-          } else if (mode === 'tue-practice') {
-            simDate.setHours(16, 45, 0, 0); // 練習中！
-          } else if (mode === 'thu-practice') {
-            simDate.setHours(17, 15, 0, 0); // 週四練習中！
-          } else if (mode === 'tue-after') {
-            simDate.setHours(18, 30, 0, 0); // 練習已結束
+            if (mode === 'tue-morning') {
+              simDate.setHours(10, 0, 0, 0);
+            } else if (mode === 'tue-practice') {
+              simDate.setHours(16, 45, 0, 0); // 練習中！
+            } else if (mode === 'thu-practice') {
+              simDate.setHours(17, 15, 0, 0); // 週四練習中！
+            } else if (mode === 'tue-after') {
+              simDate.setHours(18, 30, 0, 0); // 練習已結束
+            }
           }
 
           simulatedTimeOffset = simDate.getTime() - Date.now();
-          showToast(`已切換模擬時間為：${simDate.toLocaleString('zh-TW')}`, 'success');
+          viewYear = simDate.getFullYear();
+          viewMonth = simDate.getMonth();
+          lastActiveMonthKey = `${viewYear}-${viewMonth}`;
+          lastActiveDateKey = formatDateKey(simDate);
+          showToast(`已切換模擬時間為：${simDate.toLocaleString('zh-TW')}（日曆已自動跳轉至 ${viewMonth + 1} 月）`, 'success');
         }
 
         document.getElementById('simModalBackdrop').classList.remove('open');
@@ -1814,7 +1911,7 @@
       document.getElementById('cloudSyncModalBackdrop')?.classList.remove('open');
     }
 
-    document.getElementById('btnCloudSyncStatus')?.addEventListener('click', openCloudSyncModal);
+    // 若使用者需要手動開啟雲端設定（可選）
     document.getElementById('closeCloudSyncModalBtn')?.addEventListener('click', closeCloudSyncModal);
     document.getElementById('cloudSyncModalBackdrop')?.addEventListener('click', (e) => {
       if (e.target.id === 'cloudSyncModalBackdrop') closeCloudSyncModal();
@@ -1832,7 +1929,6 @@
       // 嘗試解析 JSON（相容 JS 物件語法或純 JSON）
       let cfg;
       try {
-        // 嘗試擷取 { ... } 內的 JSON
         const match = raw.match(/\{[\s\S]*\}/);
         cfg = match ? JSON.parse(match[0]) : JSON.parse(raw);
       } catch (err) {
@@ -1869,17 +1965,19 @@
     populateLoginSeatOptions();
     updateUserSessionUI();
 
-    // 日曆自動定位至當天年月
+    // 日曆自動定位至當天年月，並初始化時間追蹤
     const now = getCurrentDateTime();
     viewYear = now.getFullYear();
     viewMonth = now.getMonth();
+    lastActiveMonthKey = `${viewYear}-${viewMonth}`;
+    lastActiveDateKey = formatDateKey(now);
 
     renderCalendar();
     renderTodayView();
     renderRosterView();
     updateLiveClock();
 
-    // 啟動即時時鐘 (每秒更新一次)
+    // 啟動即時時鐘 (每秒更新一次，自動偵測跨日與跨月)
     setInterval(updateLiveClock, 1000);
 
     bindEvents();

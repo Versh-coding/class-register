@@ -717,6 +717,23 @@ body {
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
 }
 
+.btn-today-quick.highlight-return-today {
+  background: rgba(14, 165, 233, 0.25);
+  border-color: #38bdf8;
+  color: #f0f9ff;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+  animation: pulse-return-today 2s infinite ease-in-out;
+}
+
+@keyframes pulse-return-today {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+  }
+}
+
 /* Legend */
 .calendar-legend {
   display: flex;
@@ -819,6 +836,19 @@ body {
 .day-cell.other-month {
   opacity: 0.3;
   background: rgba(15, 23, 42, 0.2);
+}
+
+.day-cell.clickable-other-month {
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.day-cell.clickable-other-month:hover {
+  opacity: 0.9;
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(14, 165, 233, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
 /* Disabled Non-Tue/Thu Days */

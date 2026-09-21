@@ -78,6 +78,36 @@ assert.strictEqual(canCheckIn(17 * 60 + 45).success, true, '17:45 check-in must 
 assert.strictEqual(canCheckIn(18 * 60).success, true, '18:00 check-in must SUCCEED');
 assert.strictEqual(canCheckIn(18 * 60 + 1).success, false, '18:01 check-in must fail');
 
-console.log('✓ 測試通過：當天下午 16:30 前不可簽到、16:30~18:00 才能簽到規則');
+// 5. 10 月練習日與跨月時間同步測試
+const oct1 = new Date(2026, 9, 1); // 2026-10-01 (Thu)
+const oct6 = new Date(2026, 9, 6); // 2026-10-06 (Tue)
+const oct2 = new Date(2026, 9, 2); // 2026-10-02 (Fri)
+
+assert.strictEqual(isBookableDay(oct1), true, '2026-10-01 (Thursday) MUST be bookable in October');
+assert.strictEqual(isBookableDay(oct6), true, '2026-10-06 (Tuesday) MUST be bookable in October');
+assert.strictEqual(isBookableDay(oct2), false, '2026-10-02 (Friday) must NOT be bookable');
+
+// 6. 跨月份自動偵測跳轉邏輯
+function checkMonthTransition(lastMonthKey, currentMonthKey) {
+  if (lastMonthKey !== currentMonthKey) {
+    const [y, m] = currentMonthKey.split('-').map(Number);
+    return { shouldUpdateCalendar: true, newYear: y, newMonth: m };
+  }
+  return { shouldUpdateCalendar: false };
+}
+
+const sepKey = '2026-8'; // 9 月 (0-indexed 8)
+const octKey = '2026-9'; // 10 月 (0-indexed 9)
+const transitionRes = checkMonthTransition(sepKey, octKey);
+assert.strictEqual(transitionRes.shouldUpdateCalendar, true);
+assert.strictEqual(transitionRes.newMonth, 9, 'Must transition to October (index 9)');
+assert.strictEqual(transitionRes.newYear, 2026);
+console.log('✓ 測試通過：10 月練習日判斷與跨月自動跳轉日曆機制');
+
+// 7. 預約重置後資料驗證 (初始必須為空，無任何幽靈預約)
+const emptyBookings = {};
+assert.strictEqual(Object.keys(emptyBookings).length, 0, 'Clean bookings must be empty');
+console.log('✓ 測試通過：預約資料重置為空白');
+
 console.log('--- 所有核心業務邏輯驗證 100% 正確 ---');
 

@@ -21,6 +21,8 @@ const firebaseConfig = {
   messagingSenderId: "751385120026",
   appId: "1:751385120026:web:24f3798f2744d018b1b0a3"
 };
+window.FIREBASE_CONFIG = firebaseConfig;
+
 
 /**
  * Firebase Cloud Sync Adapter
@@ -47,7 +49,7 @@ window.CloudDB = (function () {
    */
   function init(savedConfigStr) {
     // 嘗試從 localStorage 讀取使用者手動儲存的設定（覆蓋預設）
-    let cfg = window.FIREBASE_CONFIG;
+    let cfg = window.FIREBASE_CONFIG || firebaseConfig;
 
     if (savedConfigStr) {
       try {
@@ -58,7 +60,7 @@ window.CloudDB = (function () {
       }
     }
 
-    if (!cfg.databaseURL || cfg.databaseURL.trim() === '') {
+    if (!cfg || !cfg.databaseURL || cfg.databaseURL.trim() === '') {
       console.info('[CloudDB] 未設定 databaseURL，使用本地 localStorage 模式');
       _isOnline = false;
       updateStatusUI(false);
@@ -96,7 +98,7 @@ window.CloudDB = (function () {
       dot.className = 'cloud-status-indicator ' + (online ? 'online' : 'offline');
     }
     if (text) {
-      text.textContent = online ? '☁️ 雲端同步中' : '☁️ 雲端同步';
+      text.textContent = online ? '🟢 雲端已即時同步' : '☁️ 離線模式';
     }
 
     // 更新彈窗內的狀態說明框
