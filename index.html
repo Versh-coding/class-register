@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="技術型高中專題競賽 ＆ 全國技藝競賽青少年組網頁設計項目 - 選手培訓預約與簽到日曆系統。每週二、四 16:30~18:00 固定訓練，支援座號 1-31 驗證與即時簽到打卡。">
+  <title>競賽培訓選手預約與簽到系統 ｜ 技高專題 ＆ 全國技藝青少組網頁設計</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Background Glow Accents -->
+  <div class="bg-gradient-glow glow-1"></div>
+  <div class="bg-gradient-glow glow-2"></div>
+  <div class="bg-gradient-glow glow-3"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+
+    <!-- Top Header & Navigation -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-badges-row">
+          <div class="brand-badge">
+            <span class="pulse-dot"></span>
+            <span>選手培訓專用系統</span>
+          </div>
+          <div class="brand-badge badge-competitions">
+            <span>🏆 專題競賽 ＆ 技藝競賽青少組</span>
+          </div>
+        </div>
+        <h1 class="brand-title">競賽培訓練習預約與簽到系統</h1>
+        <p class="brand-subtitle">
+          培訓項目：<strong class="highlight-comp">技術型高中專題競賽</strong> ｜ <strong class="highlight-comp">全國技藝競賽青少年組
+            (網頁設計項目)</strong>
+          <br>
+          固定練習時段：每週二、每週四 <span class="highlight-time">16:30 ~ 18:00</span>
+        </p>
+      </div>
+
+      <div class="header-widgets">
+        <!-- Live Clock & Status -->
+        <div class="live-clock-card" id="liveClockCard">
+          <div class="clock-label">
+            <span class="clock-icon">🕒</span>
+            <span id="currentDateStr">載入中...</span>
+          </div>
+          <div class="clock-time" id="currentTimeStr">--:--:--</div>
+          <div class="practice-status-pill" id="practiceStatusPill">
+            <span class="status-indicator"></span>
+            <span id="practiceStatusText">計算中...</span>
+          </div>
+        </div>
+
+        <!-- User Authentication Card -->
+        <div class="user-session-card" id="userSessionCard">
+          <div class="user-info-area" id="userInfoArea">
+            <!-- Will be populated by JS: either Logged in or Guest -->
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Competitions Showcase Card Section -->
+    <section class="competitions-showcase-section" id="competitionsShowcase">
+      <div class="showcase-header">
+        <div class="showcase-title-wrap">
+          <span class="trophy-badge">🏆 競賽項目介紹與培訓目標</span>
+          <h3>本訓練班針對兩大指標性賽事進行深度專案與技術培訓(以上介紹還未整理)</h3>
+        </div>
+        <button class="banner-dismiss-btn" id="toggleCompShowcaseBtn">收合介紹</button>
+      </div>
+
+      <div class="competitions-grid" id="competitionsGrid">
+        <!-- Competition Card 1 -->
+        <div class="comp-card card-project">
+          <div class="comp-card-header">
+            <div class="comp-icon-box">🚀</div>
+            <div>
+              <span class="comp-category-tag">教育部國教署 主辦</span>
+              <h4 class="comp-title">技術型高中專題及創意製作競賽</h4>
+            </div>
+          </div>
+          <p class="comp-desc">
+            全台技術型高級中等學校年度最高規格之整合性專案賽事。強調結合跨領域專業學科知識，從發掘實際問題出發，歷經系統架構規劃、代碼工程開發到完整成品的實踐歷程。
+          </p>
+          <div class="comp-details-list">
+            <div class="comp-detail-item">
+              <strong>🎯 核心訓練面向：</strong>
+              <span>軟體系統全端實作、演算法與資料庫、硬軟整合、專案進度管理 (Git)。</span>
+            </div>
+            <div class="comp-detail-item">
+              <strong>📝 評審重點：</strong>
+              <span>作品原創實用性、技術深度與架構合理性、專案書撰寫與現場簡報答辯能力。</span>
+            </div>
+            <div class="comp-detail-item">
+              <strong>⭐ 選手目標：</strong>
+              <span>完成具備商業潛力或社會實用價值之高水準專案，挑戰全國決賽優勝與技優甄審加分。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Competition Card 2 -->
+        <div class="comp-card card-webdesign">
+          <div class="comp-card-header">
+            <div class="comp-icon-box">💻</div>
+            <div>
+              <span class="comp-category-tag">勞動部 / 教育部 競賽體系</span>
+              <h4 class="comp-title">全國技藝競賽青少年組 (網頁設計項目)</h4>
+            </div>
+          </div>
+          <p class="comp-desc">
+            國家級專業技能競賽（Web Technologies 青少年組），專門為具備網頁開發天賦的技術新秀打造之高強度競技舞台。依據國際技能組織標準，在嚴格限時環境下考驗純熟前端與互動開發技術。
+          </p>
+          <div class="comp-details-list">
+            <div class="comp-detail-item">
+              <strong>🎯 核心訓練面向：</strong>
+              <span>HTML5 語意化結構、現代 CSS3 (Flexbox/Grid/動畫)、純原生 JavaScript (ES6+) 動態邏輯。</span>
+            </div>
+            <div class="comp-detail-item">
+              <strong>⚡ 評審重點：</strong>
+              <span>設計稿高精確還原度、多裝置 RWD 響應適配、非同步資料交互、代碼規範與極限作答速度。</span>
+            </div>
+            <div class="comp-detail-item">
+              <strong>⭐ 選手目標：</strong>
+              <span>鍛鍊臨場抗壓與秒級排錯能力，爭奪全國前三名金銀銅牌榮譽並邁向國手資格培訓梯隊。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notice Bar: Rules Reminder -->
+    <section class="rules-banner" id="rulesBanner">
+      <div class="banner-icon">📢</div>
+      <div class="banner-content">
+        <strong>預約與簽到規則：</strong>
+        平時皆可自由提前預約未來的每週二、週四練習；
+        <span class="text-warning">當天下午 16:30 (4:30 PM) 練習開始後開放簽到，同時當日預約截止鎖定 (16:30~18:00)</span>！
+      </div>
+      <button class="banner-dismiss-btn" id="toggleNoticeBtn" title="收合/展開規則">縮小</button>
+    </section>
+
+    <!-- App Main Views / Tabs -->
+    <div class="view-tabs-container">
+      <div class="view-tabs">
+        <button class="tab-btn active" id="tabCalendarBtn">
+          <span class="tab-icon">📅</span>
+          <span>月曆預約檢視</span>
+        </button>
+        <button class="tab-btn" id="tabTodayBtn">
+          <span class="tab-icon">⚡</span>
+          <span>今日快速簽到</span>
+          <span class="tab-badge" id="todayBadge">今日</span>
+        </button>
+        <button class="tab-btn" id="tabRosterBtn">
+          <span class="tab-icon">📊</span>
+          <span>全班 (1-31號) 出席總覽</span>
+        </button>
+      </div>
+
+      <!-- Quick Demo Tools & Admin Tools -->
+      <div class="quick-tools">
+        <button class="tool-btn admin-highlight-btn" id="btnAdminHolidayManage" title="指導老師/管理員：輸入密碼設定無法預約之練習日與填寫理由">
+          🔒 設定不可預約日
+        </button>
+        <button class="tool-btn" id="btnCloudSyncStatus" title="GitHub Pages 跨設備雲端即時同步設定">
+          <span class="cloud-status-indicator offline" id="cloudStatusDot"></span>
+          <span id="cloudStatusText">☁️ 雲端同步</span>
+        </button>
+        <button class="tool-btn" id="btnTimeSimulation" title="可模擬 16:30 練習時段以測試簽到與預約鎖定">
+          ⚙️ 模擬時段測試
+        </button>
+        <button class="tool-btn" id="btnHelpGuide">
+          ❓ 使用說明
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN VIEW 1: CALENDAR VIEW -->
+    <main class="view-panel active" id="calendarView">
+
+      <!-- Calendar Controls Bar -->
+      <div class="calendar-toolbar">
+        <div class="month-nav-group">
+          <button class="nav-arrow-btn" id="prevMonthBtn" title="上一月">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+
+          <h2 class="current-month-display" id="monthYearDisplay">-- 年 -- 月</h2>
+
+          <button class="nav-arrow-btn" id="nextMonthBtn" title="下一月">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+
+          <button class="btn-today-quick" id="btnJumpToday">
+            <span>🎯 回到今天</span>
+          </button>
+
+          <button class="btn-toolbar-admin-block" id="btnToolbarAdminBlock" title="點擊輸入密碼即可設定哪一天無法預約並註記理由">
+            🔒 設定不可預約日
+          </button>
+        </div>
+
+        <!-- Legend -->
+        <div class="calendar-legend">
+          <div class="legend-item">
+            <span class="legend-badge legend-bookable"></span>
+            <span>週二/週四 開放預約</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-badge legend-holiday"></span>
+            <span>🚫 不可預約 (停練)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-badge legend-today"></span>
+            <span>今日所在</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-badge legend-my-booking"></span>
+            <span>您已預約</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-badge legend-disabled"></span>
+            <span>非練習日</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Table / Grid -->
+      <div class="calendar-wrapper">
+        <!-- Weekday Headers -->
+        <div class="weekdays-grid">
+          <div class="weekday-header">週日 (Sun)</div>
+          <div class="weekday-header">週一 (Mon)</div>
+          <div class="weekday-header highlight-weekday">週二 (Tue) ★</div>
+          <div class="weekday-header">週三 (Wed)</div>
+          <div class="weekday-header highlight-weekday">週四 (Thu) ★</div>
+          <div class="weekday-header">週五 (Fri)</div>
+          <div class="weekday-header">週六 (Sat)</div>
+        </div>
+
+        <!-- Calendar Days Grid (Filled by JS) -->
+        <div class="days-grid" id="daysGrid">
+          <!-- Calendar date tiles inserted dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- MAIN VIEW 2: TODAY CHECK-IN PANEL -->
+    <section class="view-panel" id="todayView">
+      <div class="today-container">
+        <div class="today-hero-card" id="todayHeroCard">
+          <!-- Dynamic today banner -->
+        </div>
+
+        <div class="today-status-grid">
+          <div class="glass-card stat-box">
+            <div class="stat-number" id="todayTotalBooked">0</div>
+            <div class="stat-title">今日預約總人數</div>
+          </div>
+          <div class="glass-card stat-box">
+            <div class="stat-number color-success" id="todayCheckedInCount">0</div>
+            <div class="stat-title">已完成簽到人數</div>
+          </div>
+          <div class="glass-card stat-box">
+            <div class="stat-number color-warning" id="todayPendingCheckInCount">0</div>
+            <div class="stat-title">待簽到人數</div>
+          </div>
+        </div>
+
+        <div class="today-slots-section" id="todaySlotsSection">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN VIEW 3: ROSTER & ATTENDANCE STATS (1-31) -->
+    <section class="view-panel" id="rosterView">
+      <div class="roster-container">
+        <div class="roster-header-card">
+          <div class="roster-title-box">
+            <h2>全班 (1 - 31 號) 預約與簽到紀錄名冊</h2>
+            <p>點選座號可檢視個人詳細預約紀錄、簽到履歷與出席率</p>
+          </div>
+          <div class="roster-action-box">
+            <button class="secondary-btn" id="btnExportCSV">📥 匯出名冊 (CSV)</button>
+            <button class="secondary-btn danger-hover" id="btnResetDemoData">🔄 重設示範資料</button>
+          </div>
+        </div>
+
+        <!-- Seats Grid 1 to 31 -->
+        <div class="seat-roster-grid" id="seatRosterGrid">
+          <!-- 1 to 31 Seat Cards generated dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MODAL 1: BOOKING & CHECK-IN MODAL (When clicking a Tue or Thu date) -->
+  <div class="modal-backdrop" id="bookingModalBackdrop">
+    <div class="modal-dialog glass-modal" id="bookingModal">
+      <button class="modal-close-btn" id="closeBookingModalBtn">&times;</button>
+
+      <div class="modal-header">
+        <div class="modal-date-badge" id="modalDateBadge">2026-09-22 (二)</div>
+        <h3 class="modal-title" id="modalTitle">練習預約與簽到詳情</h3>
+        <p class="modal-subtitle" id="modalSubtitle">練習時間：16:30 ~ 18:00 (4:30 PM - 6:00 PM)</p>
+      </div>
+
+      <!-- Time status alert box -->
+      <div class="modal-time-alert" id="modalTimeAlert">
+        <!-- Filled by JS based on whether it's before/during/after 16:30 -->
+      </div>
+
+      <!-- Booking Content Area -->
+      <div class="modal-body">
+
+        <!-- Current User's Booking State on this day -->
+        <div class="user-booking-state-card" id="userBookingStateCard">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- List of Registered Students -->
+        <div class="booked-roster-card">
+          <div class="booked-header">
+            <h4>📋 本日已登記名單 (<span id="modalBookedCount">0</span> 人)</h4>
+            <span class="slot-limit-tag">建議人數上限 31 人</span>
+          </div>
+          <div class="booked-students-chips" id="modalBookedChips">
+            <!-- Chips of registered seats: e.g. [05號 🟢已簽到] [12號 ⚪未簽到] -->
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" id="modalFooterActions">
+        <!-- Buttons populated dynamically: Book / Cancel / Check-in -->
+      </div>
+
+      <!-- Admin Holiday Toggle Row -->
+      <div class="modal-admin-row">
+        <button type="button" class="admin-link-btn" id="btnModalToggleHoliday">
+          🛡️ 管理員設定：設為假日停練 (禁止預約)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: USER LOGIN MODAL (Seat 1-31 + Password) -->
+  <div class="modal-backdrop" id="loginModalBackdrop">
+    <div class="modal-dialog glass-modal login-modal" id="loginModal">
+      <button class="modal-close-btn" id="closeLoginModalBtn">&times;</button>
+
+      <div class="modal-header">
+        <div class="modal-date-badge">座號身分認證</div>
+        <h3 class="modal-title">選擇您的座號與輸入密碼</h3>
+        <p class="modal-subtitle">班級座號範圍為 1 ~ 31 號 (預設密碼為自己的座號)</p>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="loginSeatSelect">選擇座號 (1 - 31 號)：</label>
+          <div class="seat-select-wrapper">
+            <select id="loginSeatSelect" class="form-select" required>
+              <option value="" disabled selected>-- 請選擇您的座號 --</option>
+              <!-- 1 to 31 options generated via JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPasswordInput">座號密碼：</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="loginPasswordInput" class="form-input" placeholder="請輸入密碼 (預設為座號數字)" required
+              autocomplete="current-password">
+            <button type="button" class="btn-toggle-pwd" id="togglePwdVisibility">👁️</button>
+          </div>
+          <small class="form-hint">💡 提示：若第一次使用，密碼即為您的座號號碼 (例如 5 號密碼就是 5)。</small>
+        </div>
+
+        <div class="form-error-msg" id="loginErrorMsg"></div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-btn full-width" id="btnSubmitLogin">
+            🚀 驗證登入
+          </button>
+        </div>
+
+        <div class="login-footer-tips">
+          <span>🔒 密碼保護機制可防止他人擅自取消或代簽您的預約</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CHANGE PASSWORD MODAL -->
+  <div class="modal-backdrop" id="pwdModalBackdrop">
+    <div class="modal-dialog glass-modal login-modal" id="pwdModal">
+      <button class="modal-close-btn" id="closePwdModalBtn">&times;</button>
+      <div class="modal-header">
+        <h3 class="modal-title">修改座號密碼</h3>
+        <p class="modal-subtitle">目前座號：<strong id="pwdChangeSeatNum">--</strong> 號</p>
+      </div>
+      <form id="pwdChangeForm" class="login-form">
+        <div class="form-group">
+          <label>目前密碼：</label>
+          <input type="password" id="currentPwdInput" class="form-input" placeholder="請輸入原密碼" required>
+        </div>
+        <div class="form-group">
+          <label>新密碼：</label>
+          <input type="password" id="newPwdInput" class="form-input" placeholder="請輸入新密碼 (至少1位字符)" required>
+        </div>
+        <div class="form-error-msg" id="pwdChangeErrorMsg"></div>
+        <div class="form-actions">
+          <button type="submit" class="primary-btn full-width">儲存新密碼</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: TIME SIMULATION (For easily testing 16:30 - 18:00 rules!) -->
+  <div class="modal-backdrop" id="simModalBackdrop">
+    <div class="modal-dialog glass-modal" id="simModal">
+      <button class="modal-close-btn" id="closeSimModalBtn">&times;</button>
+      <div class="modal-header">
+        <div class="modal-date-badge">功能展示與測試器</div>
+        <h3 class="modal-title">模擬系統時間 (體驗各時段規則)</h3>
+        <p class="modal-subtitle">可切換不同時段，體驗「隨時自由預約」與「進入16:30~18:00後預約截止並開啟簽到」的效果：</p>
+      </div>
+      <div class="modal-body">
+        <div class="sim-options-grid">
+          <button class="sim-btn" data-sim="real">
+            <strong>⏱️ 真實電腦時間</strong>
+            <small>恢復使用您的當前真實時間</small>
+          </button>
+          <button class="sim-btn" data-sim="tue-morning">
+            <strong>☀️ 練習日 上午 10:00</strong>
+            <small>練習前：可隨時登記、修改或取消預約</small>
+          </button>
+          <button class="sim-btn" data-sim="tue-practice">
+            <strong>🔥 練習中 下午 16:45</strong>
+            <small>16:30~18:00：預約鎖定截止！全面開放「簽到打卡」</small>
+          </button>
+          <button class="sim-btn" data-sim="thu-practice">
+            <strong>🔥 週四 練習中 下午 17:15</strong>
+            <small>週四 16:30~18:00：開放現場簽到，禁止預約</small>
+          </button>
+          <button class="sim-btn" data-sim="tue-after">
+            <strong>🌙 練習後 晚間 18:30</strong>
+            <small>練習結束：當日預約與簽到已截止封存</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: HELP GUIDE -->
+  <div class="modal-backdrop" id="helpModalBackdrop">
+    <div class="modal-dialog glass-modal" id="helpModal">
+      <button class="modal-close-btn" id="closeHelpModalBtn">&times;</button>
+      <div class="modal-header">
+        <div class="modal-date-badge">競賽培訓指南</div>
+        <h3 class="modal-title">競賽培訓預約與簽到系統指南</h3>
+      </div>
+      <div class="modal-body help-body">
+        <div class="help-section">
+          <h4>🏆 培訓目標與主要賽事：</h4>
+          <p>
+            1. <strong>技術型高中專題競賽</strong>：著重跨領域專題軟硬體開發、架構規劃、專案進度推進與評審答辯。<br>
+            2. <strong>全國技藝競賽青少年組 (網頁設計項目)</strong>：著重原生 HTML5/CSS3/JavaScript 高速排版、互動邏輯與限時高壓實作。
+          </p>
+        </div>
+        <div class="help-section">
+          <h4>1. 誰可以登記與簽到？</h4>
+          <p>全班培訓選手座號 1 ~ 31 號皆可使用。請點擊右上角「登入」輸入座號，預設密碼為座號號碼（例如座號 15 號密碼為 <code>15</code>）。</p>
+        </div>
+        <div class="help-section">
+          <h4>2. 什麼時候可以預約？</h4>
+          <p>日曆上只有<strong>每週二</strong>與<strong>每週四</strong>可以預約。未來的練習時段隨時都可以自由預約！</p>
+        </div>
+        <div class="help-section">
+          <h4>3. 預約截止與簽到時間？</h4>
+          <p>練習日當天下午 <strong>16:30 (4:30 PM)</strong> 練習開始時才正式開放簽到打卡！在此之前（16:30前）無法提前簽到。同時一旦到達
+            16:30，當日預約立即截止鎖定（無法臨時加簽或取消），已預約同學請在 18:00 前完成簽到！</p>
+        </div>
+        <div class="help-section">
+          <h4>4. 日曆自動定位</h4>
+          <p>進入網站時系統會自動定位到當前年月份，並以亮藍光圈標示「今日」。隨時可點擊「回到今天」按鈕快速跳回。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: ADMIN AUTHORIZATION FOR HOLIDAY (Password Protected) -->
+  <div class="modal-backdrop" id="adminAuthModalBackdrop">
+    <div class="modal-dialog glass-modal login-modal" id="adminAuthModal">
+      <button class="modal-close-btn" id="closeAdminAuthModalBtn">&times;</button>
+      
+      <div class="modal-header">
+        <div class="modal-date-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.35);">
+          🛡️ 管理員權限驗證
+        </div>
+        <h3 class="modal-title" id="adminAuthModalTitle">設定不可預約日</h3>
+        <p class="modal-subtitle" id="adminAuthTargetDesc">以防萬一有人亂設，請輸入管理員密碼以進行操作</p>
+      </div>
+
+      <form id="adminAuthForm" class="login-form">
+        <div class="form-group">
+          <label for="adminPasswordInput">請輸入指導老師/管理員授權密碼：</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="adminPasswordInput" class="form-input" placeholder="請輸入管理員密碼" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pwd" id="toggleAdminPwdVisibility" title="顯示/隱藏密碼">👁️</button>
+          </div>
+          <small class="form-hint">🔒 密碼受到安全雜湊比對保護，僅供指導老師或管理員操作設定。</small>
+        </div>
+
+        <div class="form-error-msg" id="adminAuthErrorMsg"></div>
+
+        <div class="form-actions">
+          <button type="submit" class="danger-btn full-width" id="btnSubmitAdminAuth">
+            驗證並開啟設定面板 🔓
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 7: ADMIN BLACKOUT DATE & REASON MANAGER -->
+  <div class="modal-backdrop" id="adminHolidayPickerModalBackdrop">
+    <div class="modal-dialog glass-modal" id="adminHolidayPickerModal" style="max-width: 540px;">
+      <button class="modal-close-btn" id="closeAdminHolidayPickerBtn">&times;</button>
+      
+      <div class="modal-header">
+        <div class="modal-date-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.35);">
+          🛡️ 停練與不可預約管理
+        </div>
+        <h3 class="modal-title">不可預約日設定面板</h3>
+        <p class="modal-subtitle">選擇練習日並填寫理由，送出後將在全班日曆上標記為「不可預約」並顯示理由</p>
+      </div>
+
+      <div class="modal-body">
+        <!-- Add / Update Blackout Form -->
+        <div class="block-form-card">
+          <form id="formSetBlockDate">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="selectBlockDate" style="display:block; font-size:0.85rem; font-weight:600; color:#cbd5e1; margin-bottom:6px;">
+                📅 選擇要停練（不可預約）的日期：
+              </label>
+              <div style="display:flex; gap:8px;">
+                <select id="selectBlockDate" class="form-input" style="flex:1;" required>
+                  <!-- Populated dynamically by JS -->
+                </select>
+                <input type="date" id="inputCustomBlockDate" class="form-input" style="width:140px; display:none;" />
+                <button type="button" class="secondary-btn" id="btnToggleCustomDate" style="padding:6px 10px; font-size:0.8rem; white-space:nowrap;" title="切換自選任意日期">
+                  自選日期
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="inputBlockReason" style="display:block; font-size:0.85rem; font-weight:600; color:#cbd5e1; margin-bottom:6px;">
+                📌 停練/不可預約理由（將即時顯示在日曆上）：
+              </label>
+              <input type="text" id="inputBlockReason" class="form-input" placeholder="例如：段考週暫停預約、國定假日、校慶補假..." maxlength="30" required autocomplete="off" />
+              
+              <!-- Quick Preset Reason Chips -->
+              <div class="reason-preset-chips" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+                <span class="reason-tag-pill" data-reason="段考週暫停預約">📝 段考週暫停</span>
+                <span class="reason-tag-pill" data-reason="國定放假日">🏖️ 國定假日</span>
+                <span class="reason-tag-pill" data-reason="校慶補假一天">🎉 校慶補假</span>
+                <span class="reason-tag-pill" data-reason="指導老師出差公假">👨‍🏫 老師請公假</span>
+                <span class="reason-tag-pill" data-reason="電腦教室設備維護">🛠️ 機房維護</span>
+                <span class="reason-tag-pill" data-reason="颱風天停班停課">🌀 颱風停課</span>
+              </div>
+            </div>
+
+            <button type="submit" class="danger-btn full-width" id="btnConfirmBlockDate" style="margin-top:4px;">
+              🚫 設定此日為「不可預約日」
+            </button>
+          </form>
+        </div>
+
+        <!-- Currently Blocked Dates List -->
+        <div style="margin-top: 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <h4 style="font-size:0.95rem; color:#f1f5f9; margin:0;">
+              📋 目前已設定停練清單 (<span id="blockedDatesCount">0</span> 天)
+            </h4>
+            <span style="font-size:0.75rem; color:var(--text-muted);">點擊右側即可解鎖開放</span>
+          </div>
+          <div class="holiday-dates-list" id="holidayDatesList" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+            <!-- Generated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: FIREBASE CLOUD SYNC CONFIGURATION -->
+  <div class="modal-backdrop" id="cloudSyncModalBackdrop">
+    <div class="modal-dialog glass-modal" id="cloudSyncModal" style="max-width: 520px;">
+      <button class="modal-close-btn" id="closeCloudSyncModalBtn">&times;</button>
+      
+      <div class="modal-header">
+        <div class="modal-date-badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border-color: rgba(14, 165, 233, 0.35);">
+          ☁️ GitHub Pages 跨設備雲端同步
+        </div>
+        <h3 class="modal-title">Google Firebase 即時連線</h3>
+        <p class="modal-subtitle">設定後全班同學使用手機或電腦，所有預約、簽到與停練紀錄皆即時秒級共用！</p>
+      </div>
+
+      <div class="modal-body">
+        <div id="cloudConnectionStatusBox" class="cloud-status-box" style="margin-bottom:14px; padding:12px; border-radius:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-subtle);">
+          <!-- Populated by JS -->
+        </div>
+
+        <form id="formCloudSyncConfig">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label for="firebaseConfigInput" style="display:block; font-size:0.85rem; font-weight:600; color:#cbd5e1; margin-bottom:6px;">
+              貼上 Firebase 專案設定物件 (JSON 或 JS 代碼)：
+            </label>
+            <textarea id="firebaseConfigInput" class="form-input" rows="5" style="font-family:monospace; font-size:0.8rem; resize:vertical;" placeholder='{\n  "apiKey": "AIzaSy...",\n  "databaseURL": "https://...",\n  "projectId": "..."\n}'></textarea>
+            <small class="form-hint" style="display:block; margin-top:6px; color:var(--text-dim);">
+              💡 尚未建立 Firebase？請參閱專案目錄中的 <code>FIREBASE_SETUP_GUIDE.md</code> 快速免付費指南。
+            </small>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button type="submit" class="primary-btn" style="flex:1;">💾 儲存並連線雲端</button>
+            <button type="button" class="secondary-btn" id="btnDisconnectCloud" style="flex:1;">恢復本地儲存模式</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Firebase App & Realtime Database SDK (Compat for GitHub Pages static hosting) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <!-- Main Application Logic -->
+  <script src="app.js"></script>
+</body>
+
+</html>
