@@ -18,6 +18,36 @@
 </head>
 
 <body>
+  <!-- ENTRANCE ANIMATION SPLASH OVERLAY -->
+  <div id="introSplashOverlay" class="intro-splash-overlay">
+    <div class="splash-particles">
+      <div class="particle p-1"></div>
+      <div class="particle p-2"></div>
+      <div class="particle p-3"></div>
+      <div class="particle p-4"></div>
+    </div>
+    
+    <div class="splash-content-box">
+      <div class="splash-badge-wrapper">
+        <div class="splash-pulse-ring"></div>
+        <div class="splash-pulse-ring ring-2"></div>
+        <div class="splash-icon-circle">🏆</div>
+      </div>
+      <div class="splash-subtitle">專題競賽 ＆ 全國技藝競賽青少年組 (網頁設計)</div>
+      <h1 class="splash-title">競賽培訓練習預約與簽到系統</h1>
+      
+      <div class="splash-progress-container">
+        <div class="splash-progress-bar">
+          <div class="splash-progress-fill" id="splashProgressFill"></div>
+        </div>
+        <div class="splash-status-row">
+          <span class="splash-status-text" id="splashStatusText">系統載入中...</span>
+          <span class="splash-percent-text" id="splashPercentText">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Background Glow Accents -->
   <div class="bg-gradient-glow glow-1"></div>
   <div class="bg-gradient-glow glow-2"></div>
@@ -30,9 +60,9 @@
     <header class="app-header">
       <div class="brand-section">
         <div class="brand-badges-row">
-          <div class="brand-badge">
+          <div class="brand-badge brand-badge-interactive" id="btnReplaySplash" title="點擊重播入場動畫">
             <span class="pulse-dot"></span>
-            <span>選手培訓專用系統</span>
+            <span>選手培訓專用系統 🎬</span>
           </div>
           <div class="brand-badge badge-competitions">
             <span>🏆 專題競賽 ＆ 技藝競賽青少組</span>
@@ -387,13 +417,12 @@
         </div>
 
         <div class="form-group">
-          <label for="loginPasswordInput">座號確認：</label>
+          <label for="loginPasswordInput">座號確認 (二次確認)：</label>
           <div class="password-input-wrapper">
-            <input type="password" id="loginPasswordInput" class="form-input" placeholder="請輸入密碼 (預設為座號數字)" required
-              autocomplete="current-password">
-            <button type="button" class="btn-toggle-pwd" id="togglePwdVisibility">👁️</button>
+            <input type="number" id="loginPasswordInput" class="form-input" placeholder="請再次輸入座號 (例如：5)" required
+              min="1" max="31">
           </div>
-          <small class="form-hint">💡 提示：請打上您的座號(例如 5 號就是打 5)。</small>
+          <small class="form-hint">💡 二次確認：請再次輸入相同的座號數字，以確認未選錯號碼。</small>
         </div>
 
         <div class="form-error-msg" id="loginErrorMsg"></div>
@@ -405,31 +434,6 @@
         </div>
 
         <div class="login-footer-tips">
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL 3: CHANGE PASSWORD MODAL -->
-  <div class="modal-backdrop" id="pwdModalBackdrop">
-    <div class="modal-dialog glass-modal login-modal" id="pwdModal">
-      <button class="modal-close-btn" id="closePwdModalBtn">&times;</button>
-      <div class="modal-header">
-        <h3 class="modal-title">修改座號密碼</h3>
-        <p class="modal-subtitle">目前座號：<strong id="pwdChangeSeatNum">--</strong> 號</p>
-      </div>
-      <form id="pwdChangeForm" class="login-form">
-        <div class="form-group">
-          <label>目前密碼：</label>
-          <input type="password" id="currentPwdInput" class="form-input" placeholder="請輸入原密碼" required>
-        </div>
-        <div class="form-group">
-          <label>新密碼：</label>
-          <input type="password" id="newPwdInput" class="form-input" placeholder="請輸入新密碼 (至少1位字符)" required>
-        </div>
-        <div class="form-error-msg" id="pwdChangeErrorMsg"></div>
-        <div class="form-actions">
-          <button type="submit" class="primary-btn full-width">儲存新密碼</button>
         </div>
       </form>
     </div>
@@ -497,11 +501,11 @@
         </div>
         <div class="help-section">
           <h4>1. 誰可以登記與簽到？</h4>
-          <p>全班培訓選手座號 1 ~ 31 號皆可使用。請點擊右上角「登入」輸入座號，預設密碼為座號號碼（例如座號 15 號密碼為 <code>15</code>）。</p>
+          <p>全班培訓選手座號 1 ~ 31 號皆可使用。請點擊右上角「登入」選擇座號，並再次輸入座號數字進行確認（例如座號 15 號再次輸入 <code>15</code>）。</p>
         </div>
         <div class="help-section">
-          <h4>2. 什麼時候可以預約？</h4>
-          <p>日曆上只有<strong>每週二</strong>與<strong>每週四</strong>可以預約。未來的練習時段隨時都可以自由預約！</p>
+          <h4>2. 為什麼只有星期二和星期四才能預約</h4>
+          <p>因為目前只有這兩天"夢想家"教室才會開放。如果要其他日期請先詢問老師</p>
         </div>
         <div class="help-section">
           <h4>3. 預約截止與簽到時間？</h4>

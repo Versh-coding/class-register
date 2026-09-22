@@ -77,38 +77,39 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Background Ambient Orbs */
+/* Background Ambient Orbs — GPU-accelerated (no filter:blur for scroll perf) */
 .bg-gradient-glow {
   position: fixed;
   border-radius: 50%;
-  filter: blur(120px);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.35;
+  /* 移至 GPU 合成層，避免每次滾動重繪觸發主執行緒重計算 */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .glow-1 {
-  width: 500px;
-  height: 500px;
-  top: -100px;
-  left: -100px;
-  background: radial-gradient(circle, #4f46e5 0%, transparent 70%);
+  width: 700px;
+  height: 700px;
+  top: -200px;
+  left: -200px;
+  background: radial-gradient(circle at center, rgba(79, 70, 229, 0.38) 0%, rgba(79, 70, 229, 0.12) 45%, transparent 70%);
 }
 
 .glow-2 {
-  width: 600px;
-  height: 600px;
-  top: 30%;
-  right: -150px;
-  background: radial-gradient(circle, #0284c7 0%, transparent 70%);
+  width: 800px;
+  height: 800px;
+  top: 20%;
+  right: -250px;
+  background: radial-gradient(circle at center, rgba(2, 132, 199, 0.35) 0%, rgba(2, 132, 199, 0.1) 45%, transparent 70%);
 }
 
 .glow-3 {
-  width: 450px;
-  height: 450px;
-  bottom: -50px;
-  left: 25%;
-  background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+  width: 650px;
+  height: 650px;
+  bottom: -150px;
+  left: 15%;
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.32) 0%, rgba(139, 92, 246, 0.08) 45%, transparent 70%);
 }
 
 /* App Container */
@@ -130,13 +131,12 @@ body {
   flex-wrap: wrap;
   gap: 20px;
   padding: 20px 24px;
-  background: var(--surface-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(17, 26, 46, 0.97);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   margin-bottom: 16px;
+  will-change: transform;
 }
 
 .brand-section {
@@ -165,6 +165,7 @@ body {
   background-color: #38bdf8;
   border-radius: 50%;
   animation: pulseGlow 1.8s infinite;
+  will-change: transform, opacity;
 }
 
 @keyframes pulseGlow {
@@ -266,6 +267,7 @@ body {
   color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.4);
   animation: liveBadgePulse 1.5s infinite;
+  will-change: opacity;
 }
 
 .practice-status-pill.status-locked {
@@ -273,9 +275,10 @@ body {
   color: #fbbf24;
 }
 
+/* 用 opacity 取代 box-shadow 動畫 — 效能提升 */
 @keyframes liveBadgePulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
-  50% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 /* User Session Card */
@@ -354,9 +357,7 @@ body {
    COMPETITIONS SHOWCASE SECTION
    ========================================================================== */
 .competitions-showcase-section {
-  background: var(--surface-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(17, 26, 46, 0.95);
   border: 1px solid rgba(99, 102, 241, 0.25);
   border-radius: var(--radius-lg);
   padding: 20px 24px;
@@ -414,14 +415,16 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: var(--transition-normal);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
+  will-change: transform;
 }
 
 .comp-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(99, 102, 241, 0.35);
 }
 
 .card-project {
@@ -601,6 +604,27 @@ body {
   color: #ffffff;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(59, 130, 246, 0.9));
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 閃光效果 — 純 transform，不觸發 repaint */
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  transform: skewX(-20deg);
+  animation: tabShimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes tabShimmer {
+  0% { left: -80%; }
+  60%, 100% { left: 140%; }
 }
 
 .tab-badge {
@@ -723,15 +747,13 @@ body {
   color: #f0f9ff;
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
   animation: pulse-return-today 2s infinite ease-in-out;
+  will-change: opacity;
 }
 
+/* opacity 動畫比 box-shadow 省 GPU */
 @keyframes pulse-return-today {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
 }
 
 /* Legend */
@@ -776,8 +798,7 @@ body {
 
 /* Calendar Grid Container */
 .calendar-wrapper {
-  background: var(--surface-card);
-  backdrop-filter: blur(16px);
+  background: rgba(17, 26, 46, 0.97);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -873,8 +894,8 @@ body {
 .day-cell.bookable:hover {
   background: linear-gradient(145deg, rgba(14, 165, 233, 0.18), rgba(99, 102, 241, 0.12));
   border-color: rgba(14, 165, 233, 0.55);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.2);
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 10px 24px rgba(14, 165, 233, 0.22);
 }
 
 /* TODAY Highlighting */
@@ -971,6 +992,7 @@ body {
   color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.4);
   animation: pulseGlow 2s infinite;
+  will-change: opacity, transform;
 }
 
 .status-chip.chip-locked {
@@ -1042,8 +1064,7 @@ body {
 }
 
 .glass-card {
-  background: var(--surface-card);
-  backdrop-filter: blur(12px);
+  background: rgba(17, 26, 46, 0.97);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 20px;
@@ -1132,14 +1153,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: var(--transition-fast);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.28s ease;
   cursor: pointer;
+  will-change: transform;
+  /* 入場動畫 */
+  animation: cardSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cardSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .seat-card:hover {
-  background: rgba(30, 41, 67, 0.75);
-  border-color: rgba(99, 102, 241, 0.4);
-  transform: translateY(-2px);
+  background: rgba(30, 41, 67, 0.8);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.4);
 }
 
 .seat-card.is-current-user {
@@ -1760,6 +1790,7 @@ body {
   .calendar-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .month-nav-group {
@@ -1772,7 +1803,7 @@ body {
   }
 
   .day-cell {
-    min-height: 72px;
+    min-height: 68px;
     border-radius: 8px;
     padding: 4px 2px;
   }
@@ -1784,11 +1815,69 @@ body {
   .view-tabs {
     width: 100%;
     overflow-x: auto;
+    justify-content: flex-start;
   }
 
   .view-tabs .tab-btn {
     padding: 8px 10px;
     font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .competitions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seat-roster-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .splash-content-box {
+    padding: 28px 18px;
+    width: 92%;
+  }
+
+  .splash-title {
+    font-size: 1.5rem;
+  }
+
+  .modal-card, .modal-content {
+    width: 95% !important;
+    max-width: 95% !important;
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .day-cell {
+    min-height: 56px;
+    padding: 2px 1px;
+  }
+
+  .date-number {
+    font-size: 0.82rem;
+  }
+
+  .booking-indicator-pill {
+    font-size: 0.58rem;
+    padding: 1px 3px;
+  }
+
+  .weekday-header {
+    font-size: 0.75rem;
+    padding: 4px 0;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .header-actions .btn {
+    flex: 1 1 calc(50% - 6px);
+    font-size: 0.8rem;
+    padding: 8px 8px;
   }
 }
 
@@ -2029,4 +2118,345 @@ body {
   gap: 10px;
 }
 
+/* ==========================================================================
+   ENTRANCE ANIMATION SPLASH OVERLAY
+   ========================================================================== */
+.intro-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: radial-gradient(circle at center, #111827 0%, #0a0e1a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
+.intro-splash-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-content-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 580px;
+  width: 90%;
+  padding: 40px 24px;
+  position: relative;
+  z-index: 2;
+  animation: splashFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.intro-splash-overlay.fade-out .splash-content-box {
+  animation: splashZoomOut 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes splashFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes splashZoomOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+    filter: blur(12px);
+  }
+}
+
+/* Badge Icon & Pulse Rings */
+.splash-badge-wrapper {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.splash-pulse-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 2px solid rgba(99, 102, 241, 0.5);
+  animation: splashPulse 2.2s ease-in-out infinite;
+}
+
+.splash-pulse-ring.ring-2 {
+  inset: -22px;
+  border: 1px dashed rgba(6, 182, 212, 0.4);
+  animation: splashRotate 12s linear infinite;
+}
+
+.splash-icon-circle {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  box-shadow: 0 0 50px rgba(99, 102, 241, 0.65), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes splashPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 0.95;
+  }
+}
+
+@keyframes splashRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Text Styling */
+.splash-subtitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+}
+
+.splash-title {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.35;
+  margin-bottom: 32px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* Progress Container */
+.splash-progress-container {
+  width: 100%;
+  max-width: 380px;
+}
+
+.splash-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.splash-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981);
+  border-radius: 999px;
+  transition: width 0.04s ease-out;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.9);
+}
+
+.splash-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 0.85rem;
+}
+
+.splash-status-text {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.splash-percent-text {
+  color: var(--cyan-accent);
+  font-family: 'Outfit', monospace;
+  font-weight: 700;
+}
+
+/* Floating Particles */
+.splash-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.splash-particles .particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.4);
+  filter: blur(4px);
+  animation: floatParticle 6s ease-in-out infinite alternate;
+}
+
+.particle.p-1 { width: 140px; height: 140px; top: 10%; left: 15%; background: rgba(99, 102, 241, 0.25); animation-duration: 7s; }
+.particle.p-2 { width: 200px; height: 200px; bottom: 15%; right: 10%; background: rgba(6, 182, 212, 0.2); animation-duration: 9s; }
+.particle.p-3 { width: 90px; height: 90px; top: 60%; left: 8%; background: rgba(16, 185, 129, 0.2); animation-duration: 5s; }
+.particle.p-4 { width: 120px; height: 120px; top: 20%; right: 20%; background: rgba(129, 140, 248, 0.2); animation-duration: 8s; }
+
+@keyframes floatParticle {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -40px) scale(1.1); }
+}
+
+.brand-badge-interactive {
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.brand-badge-interactive:hover {
+  transform: translateY(-2px);
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+
+/* ==========================================================================
+   GPU-SAFE VISUAL EFFECTS (transform + opacity only, no repaint)
+   ========================================================================== */
+
+/* Ἲ6  Header 漂浮效果 */
+.app-header {
+  animation: headerFloat 6s ease-in-out infinite;
+}
+
+@keyframes headerFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-3px); }
+}
+
+/* 🏠 背景光暈球漂動（漯態漂移） */
+.glow-1 {
+  animation: orb1Drift 18s ease-in-out infinite alternate;
+}
+.glow-2 {
+  animation: orb2Drift 22s ease-in-out infinite alternate;
+}
+.glow-3 {
+  animation: orb3Drift 15s ease-in-out infinite alternate;
+}
+
+@keyframes orb1Drift {
+  0%   { transform: translateZ(0) translate(0, 0); }
+  100% { transform: translateZ(0) translate(40px, 30px); }
+}
+@keyframes orb2Drift {
+  0%   { transform: translateZ(0) translate(0, 0); }
+  100% { transform: translateZ(0) translate(-35px, 25px); }
+}
+@keyframes orb3Drift {
+  0%   { transform: translateZ(0) translate(0, 0); }
+  100% { transform: translateZ(0) translate(25px, -30px); }
+}
+
+/* 📅 日曆區進場動畫 */
+.calendar-wrapper {
+  animation: sectionReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.competitions-showcase-section {
+  animation: sectionReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sectionReveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 🔲 統計卡片漂浮動畫（今日狀況區） */
+.glass-card {
+  animation: sectionReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease;
+  will-change: transform;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+/* 🏅 競賽卡片內指標圖標漯態動畫 */
+.comp-icon-box {
+  animation: iconBob 3.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes iconBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30%       { transform: translateY(-4px) rotate(-3deg); }
+  70%       { transform: translateY(-2px) rotate(2deg); }
+}
+
+/* ✨ 今日日期格選中光暈邊框 */
+.day-cell.is-today {
+  animation: todayCellPulse 3s ease-in-out infinite;
+}
+
+@keyframes todayCellPulse {
+  0%, 100% { border-color: rgba(56, 189, 248, 0.9); }
+  50%       { border-color: rgba(56, 189, 248, 0.4); }
+}
+
+/* 🔖 名单頁團員卡片連續進場（不同延遲） */
+.seat-card:nth-child(1)  { animation-delay: 0.00s; }
+.seat-card:nth-child(2)  { animation-delay: 0.04s; }
+.seat-card:nth-child(3)  { animation-delay: 0.08s; }
+.seat-card:nth-child(4)  { animation-delay: 0.12s; }
+.seat-card:nth-child(5)  { animation-delay: 0.16s; }
+.seat-card:nth-child(6)  { animation-delay: 0.20s; }
+.seat-card:nth-child(7)  { animation-delay: 0.24s; }
+.seat-card:nth-child(8)  { animation-delay: 0.28s; }
+.seat-card:nth-child(9)  { animation-delay: 0.32s; }
+.seat-card:nth-child(10) { animation-delay: 0.36s; }
+.seat-card:nth-child(11) { animation-delay: 0.40s; }
+.seat-card:nth-child(12) { animation-delay: 0.44s; }
+.seat-card:nth-child(13) { animation-delay: 0.48s; }
+.seat-card:nth-child(14) { animation-delay: 0.52s; }
+.seat-card:nth-child(15) { animation-delay: 0.56s; }
+.seat-card:nth-child(16) { animation-delay: 0.60s; }
+.seat-card:nth-child(17) { animation-delay: 0.64s; }
+.seat-card:nth-child(18) { animation-delay: 0.68s; }
+.seat-card:nth-child(19) { animation-delay: 0.72s; }
+.seat-card:nth-child(20) { animation-delay: 0.76s; }
+.seat-card:nth-child(21) { animation-delay: 0.80s; }
+.seat-card:nth-child(22) { animation-delay: 0.84s; }
+.seat-card:nth-child(23) { animation-delay: 0.88s; }
+.seat-card:nth-child(24) { animation-delay: 0.92s; }
+.seat-card:nth-child(25) { animation-delay: 0.96s; }
+.seat-card:nth-child(26) { animation-delay: 1.00s; }
+.seat-card:nth-child(27) { animation-delay: 1.04s; }
+.seat-card:nth-child(28) { animation-delay: 1.08s; }
+.seat-card:nth-child(29) { animation-delay: 1.12s; }
+.seat-card:nth-child(30) { animation-delay: 1.16s; }
+.seat-card:nth-child(31) { animation-delay: 1.20s; }

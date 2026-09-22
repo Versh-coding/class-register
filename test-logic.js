@@ -3,13 +3,13 @@ const assert = require('assert');
 
 console.log('--- 開始邏輯自動化測試 ---');
 
-// 1. 座號與密碼驗證
+// 1. 座號雙重確認驗證
 const TOTAL_SEATS = 31;
 for (let seat = 1; seat <= TOTAL_SEATS; seat++) {
-  const defaultPwd = String(seat);
-  assert.strictEqual(defaultPwd, String(seat), `Seat ${seat} default password must match seat number`);
+  const seatConfirm = String(seat);
+  assert.strictEqual(parseInt(seatConfirm, 10), seat, `Seat ${seat} double confirm input must match seat number`);
 }
-console.log('✓ 測試通過：1~31 號座號預設密碼驗證');
+console.log('✓ 測試通過：1~31 號座號雙重確認驗證');
 
 // 2. 週二與週四判斷
 function isBookableDay(dateObj) {

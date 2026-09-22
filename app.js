@@ -200,21 +200,12 @@
   }
 
   /**
-   * 驗證座號密碼（預設密碼即為座號本身）
+   * 驗證座號雙重確認（比對輸入座號是否與選擇座號一致）
    */
   function verifyPassword(seatNum, inputPwd) {
-    const passwords = getStoredPasswords();
-    const correctPwd = passwords[seatNum] || String(seatNum);
-    return String(inputPwd).trim() === String(correctPwd).trim();
-  }
-
-  /**
-   * 更新座號密碼
-   */
-  function updatePassword(seatNum, newPwd) {
-    const passwords = getStoredPasswords();
-    passwords[seatNum] = String(newPwd).trim();
-    saveStoredPasswords(passwords);
+    const parsedInput = parseInt(inputPwd, 10);
+    const parsedSeat = parseInt(seatNum, 10);
+    return !isNaN(parsedInput) && parsedInput === parsedSeat;
   }
 
   // ---- 不可預約日（含理由）管理 ----
@@ -1276,7 +1267,6 @@
             <strong>${String(currentUser).padStart(2, '0')} 號</strong>
           </div>
           <div class="user-actions-btns">
-            <button class="user-action-btn" id="btnChangePwd">密碼</button>
             <button class="user-action-btn" id="btnLogout">登出</button>
           </div>
         </div>
@@ -1285,10 +1275,6 @@
       document.getElementById('btnLogout')?.addEventListener('click', () => {
         setCurrentUser(null);
         showToast('已安全登出', 'info');
-      });
-
-      document.getElementById('btnChangePwd')?.addEventListener('click', () => {
-        openPwdChangeModal(currentUser);
       });
 
     } else {
@@ -1303,20 +1289,6 @@
         openLoginModal();
       });
     }
-  }
-
-  // 密碼修改
-  function openPwdChangeModal(seatNum) {
-    const modal = document.getElementById('pwdModalBackdrop');
-    document.getElementById('pwdChangeSeatNum').textContent = String(seatNum).padStart(2, '0');
-    document.getElementById('currentPwdInput').value = '';
-    document.getElementById('newPwdInput').value = '';
-    document.getElementById('pwdChangeErrorMsg').textContent = '';
-    modal.classList.add('open');
-  }
-
-  function closePwdChangeModal() {
-    document.getElementById('pwdModalBackdrop').classList.remove('open');
   }
 
   // ==========================================
@@ -1513,16 +1485,6 @@
       if (e.target.id === 'loginModalBackdrop') closeLoginModal();
     });
 
-    // 密碼顯示切換
-    document.getElementById('togglePwdVisibility')?.addEventListener('click', () => {
-      const pwdInput = document.getElementById('loginPasswordInput');
-      if (pwdInput.type === 'password') {
-        pwdInput.type = 'text';
-      } else {
-        pwdInput.type = 'password';
-      }
-    });
-
     // 登入表單提交
     document.getElementById('loginForm')?.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1544,36 +1506,8 @@
           openBookingModal(selectedDateStr);
         }
       } else {
-        errDiv.textContent = '❌ 密碼錯誤！提示：預設密碼為您自己的座號。';
+        errDiv.textContent = '❌ 座號二次確認不符！請輸入與上方選擇相同的座號數字。';
       }
-    });
-
-    // 修改密碼提交
-    document.getElementById('pwdChangeForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const currentUser = getCurrentUser();
-      const currentPwd = document.getElementById('currentPwdInput').value;
-      const newPwd = document.getElementById('newPwdInput').value;
-      const errDiv = document.getElementById('pwdChangeErrorMsg');
-
-      if (!verifyPassword(currentUser, currentPwd)) {
-        errDiv.textContent = '原密碼不正確！';
-        return;
-      }
-
-      if (!newPwd || newPwd.trim().length === 0) {
-        errDiv.textContent = '新密碼不能為空！';
-        return;
-      }
-
-      updatePassword(currentUser, newPwd);
-      closePwdChangeModal();
-      showToast('密碼修改成功！下次登入請使用新密碼。', 'success');
-    });
-
-    document.getElementById('closePwdModalBtn')?.addEventListener('click', closePwdChangeModal);
-    document.getElementById('pwdModalBackdrop')?.addEventListener('click', (e) => {
-      if (e.target.id === 'pwdModalBackdrop') closePwdChangeModal();
     });
 
     // 競賽介紹卡片區塊 收合/展開切換
@@ -1954,6 +1888,62 @@
       showToast('已切換回本地儲存模式', 'info');
       closeCloudSyncModal();
     });
+
+    // 重播入場動畫
+    document.getElementById('btnReplaySplash')?.addEventListener('click', () => {
+      initEntranceAnimation(true);
+    });
+  }
+
+  // ==========================================
+  // 14.5. 入場動畫 (Entrance Splash Animation)
+  // ==========================================
+
+  function initEntranceAnimation(isReplay = false) {
+    const overlay = document.getElementById('introSplashOverlay');
+    const progressFill = document.getElementById('splashProgressFill');
+    const percentText = document.getElementById('splashPercentText');
+    const statusText = document.getElementById('splashStatusText');
+    if (!overlay || !progressFill || !percentText || !statusText) return;
+
+    overlay.classList.remove('fade-out');
+    progressFill.style.width = '0%';
+    percentText.textContent = '0%';
+    statusText.textContent = '系統與模組初始化中...';
+
+    let current = 0;
+    const duration = 1600; // 1.6 秒
+    const intervalTime = 25;
+    const totalSteps = duration / intervalTime;
+    const increment = 100 / totalSteps;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current > 100) current = 100;
+
+      progressFill.style.width = `${current.toFixed(0)}%`;
+      percentText.textContent = `${Math.floor(current)}%`;
+
+      if (current < 25) {
+        statusText.textContent = '載入系統模組與視覺主題...';
+      } else if (current < 60) {
+        statusText.textContent = '同步賽事培訓月曆與簽到狀態...';
+      } else if (current < 90) {
+        statusText.textContent = '建立即時時鐘與座號確認機制...';
+      } else {
+        statusText.textContent = '✨ 系統載入完成，準備進入！';
+      }
+
+      if (current >= 100) {
+        clearInterval(timer);
+        setTimeout(() => {
+          overlay.classList.add('fade-out');
+          if (isReplay) {
+            showToast('🎬 入場動畫重播完成！', 'success');
+          }
+        }, 350);
+      }
+    }, intervalTime);
   }
 
   // ==========================================
@@ -1981,6 +1971,9 @@
     setInterval(updateLiveClock, 1000);
 
     bindEvents();
+
+    // 啟動入場動畫
+    initEntranceAnimation(false);
 
     // 嘗試初始化 Firebase 雲端同步（若有設定則自動連線）
     initCloudSync(null);
